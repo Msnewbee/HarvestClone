@@ -1,4 +1,3 @@
-// Konfigurasi Phaser
 const config = {
     type: Phaser.AUTO,
     width: 800,
@@ -12,27 +11,30 @@ const config = {
     }
 };
 
-// Membuat game baru
 const game = new Phaser.Game(config);
 
-// Preload assets
 function preload() {
-    this.load.image("grass", "assets/grass.png");  // Gambar rumput
-    this.load.spritesheet("farmer", "assets/farmer.png", { frameWidth: 32, frameHeight: 48 }); // Karakter petani
+    this.load.image("grass", "assets/grass.png");
+    this.load.spritesheet("farmer", "assets/farmer.png", { frameWidth: 32, frameHeight: 48 });
+    this.load.image("seed", "assets/seed.png");       // Benih tanaman
+    this.load.image("sprout", "assets/sprout.png");   // Tanaman muda
+    this.load.image("carrot", "assets/carrot.png");   // Tanaman siap panen
 }
 
-// Membuat objek game
 function create() {
-    this.add.tileSprite(400, 300, 800, 600, "grass"); // Tambahkan background rumput
+    this.add.tileSprite(400, 300, 800, 600, "grass");
     
-    // Tambahkan karakter petani di tengah layar
     this.player = this.physics.add.sprite(400, 300, "farmer");
-
-    // Tambahkan kontrol keyboard
     this.cursors = this.input.keyboard.createCursorKeys();
+    
+    this.plantedCrops = [];  // Array untuk menyimpan tanaman yang ditanam
+
+    // Klik kiri untuk menanam benih
+    this.input.on('pointerdown', (pointer) => {
+        plantSeed(this, pointer.x, pointer.y);
+    });
 }
 
-// Update game loop (untuk gerakan karakter)
 function update() {
     if (this.cursors.left.isDown) {
         this.player.setVelocityX(-160);
@@ -49,4 +51,27 @@ function update() {
     } else {
         this.player.setVelocityY(0);
     }
+}
+
+// Fungsi untuk menanam benih
+function plantSeed(scene, x, y) {
+    const seed = scene.add.image(x, y, "seed");
+
+    // Tumbuh menjadi tunas setelah 3 detik
+    setTimeout(() => {
+        seed.setTexture("sprout");
+    }, 3000);
+
+    // Tumbuh menjadi wortel setelah 6 detik
+    setTimeout(() => {
+        seed.setTexture("carrot");
+
+        // Tambahkan event klik untuk panen
+        seed.setInteractive();
+        seed.on("pointerdown", () => {
+            seed.destroy(); // Hapus dari game setelah dipanen
+        });
+    }, 6000);
+
+    scene.plantedCrops.push(seed);
 }
