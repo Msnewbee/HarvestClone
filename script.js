@@ -5,6 +5,10 @@ document.addEventListener("DOMContentLoaded", () => {
     canvas.width = 800;
     canvas.height = 600;
 
+    // Gambar Background
+    const background = new Image();
+    background.src = "assets/images/rumput.png";
+
     // Karakter
     const player = {
         x: 400,
@@ -26,18 +30,12 @@ document.addEventListener("DOMContentLoaded", () => {
         d: false
     };
 
-    // Event Listener untuk menekan tombol
     window.addEventListener("keydown", (e) => {
-        if (keys.hasOwnProperty(e.key)) {
-            keys[e.key] = true;
-        }
+        if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
     });
 
-    // Event Listener untuk melepas tombol
     window.addEventListener("keyup", (e) => {
-        if (keys.hasOwnProperty(e.key)) {
-            keys[e.key] = false;
-        }
+        if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
     });
 
     function movePlayer() {
@@ -47,10 +45,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (keys.ArrowRight || keys.d) player.x += player.speed;
 
         // Batas layar (agar tidak keluar)
-        if (player.x < 0) player.x = 0;
-        if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-        if (player.y < 0) player.y = 0;
-        if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+        player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+        player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+    }
+
+    function drawBackground() {
+        ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
     }
 
     function drawPlayer() {
@@ -60,11 +60,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function update() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBackground();
         movePlayer();
         drawPlayer();
         requestAnimationFrame(update);
     }
 
-    update();
+    background.onload = () => {
+        update();
+    };
 });
-
