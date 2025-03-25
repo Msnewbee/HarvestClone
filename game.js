@@ -13,9 +13,10 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-let money = 20; // Uang awal
-let seedsOwned = 0; // Jumlah benih yang dimiliki
-let selectedTool = "hand"; // Default alat: tangan kosong
+let money = 20;
+let seedsOwned = 0;
+let selectedTool = "hand";
+let isRaining = false; // Status cuaca
 
 function preload() {
     this.load.image("grass", "assets/grass.png");
@@ -26,6 +27,7 @@ function preload() {
     this.load.image("shop", "assets/shop.png");
     this.load.image("coin", "assets/coin.png");
     this.load.image("watering_can", "assets/watering_can.png"); 
+    this.load.image("raindrop", "assets/raindrop.png"); // Gambar tetesan air
 }
 
 function create() {
@@ -41,10 +43,8 @@ function create() {
     this.shop.setInteractive();
     this.shop.on("pointerdown", openShop.bind(this));
 
-    // Uang pemain
+    // Uang & benih pemain
     this.moneyText = this.add.text(20, 20, `💰 Uang: ${money}`, { fontSize: "20px", fill: "#fff" });
-
-    // Stok benih
     this.seedText = this.add.text(20, 50, `🌱 Benih: ${seedsOwned}`, { fontSize: "20px", fill: "#fff" });
 
     // Alat penyiram
@@ -53,6 +53,13 @@ function create() {
     this.wateringCan.on("pointerdown", () => {
         selectedTool = "watering_can";
     });
+
+    // Cuaca (hujan)
+    this.weatherText = this.add.text(600, 20, "☀️ Cerah", { fontSize: "20px", fill: "#fff" });
+
+    this.raindrops = this.add.group();
+
+    startRainCycle(this); // Mulai siklus hujan
 
     // Klik di tanah untuk menanam benih atau menyiram
     this.input.on("pointerdown", (pointer) => {
@@ -85,7 +92,7 @@ function update() {
 // Fungsi untuk membeli benih di toko
 function openShop() {
     if (money >= 5) {
-        money -= 5; // Harga benih 5 koin
+        money -= 5;
         seedsOwned += 1;
         this.moneyText.setText(`💰 Uang: ${money}`);
         this.seedText.setText(`🌱 Benih: ${seedsOwned}`);
@@ -102,9 +109,8 @@ function plantSeed(scene, x, y) {
 
         const seed = scene.add.image(x, y, "seed");
         seed.growthStage = 0;
-        seed.isWatered = false; 
+        seed.isWatered = false;
 
-        // Tanaman tumbuh normal setelah 6 detik
         seed.timer = setTimeout(() => {
             if (!seed.isWatered) {
                 seed.setTexture("carrot");
@@ -125,7 +131,6 @@ function waterCrops(scene, x, y) {
             crop.isWatered = true;
             crop.setTexture("sprout");
 
-            // Jika disiram, tumbuh lebih cepat (3 detik)
             setTimeout(() => {
                 crop.setTexture("carrot");
                 crop.growthStage = 1;
@@ -140,4 +145,48 @@ function sellCrops() {
     money += earnings;
     this.moneyText.setText(`💰 Uang: ${money}`);
     this.plantedCrops = [];
+}
+
+// Fungsi untuk memulai siklus hujan
+function startRainCycle(scene) {
+    let timeUntilRain = Phaser.Math.Between(20000, 40000); // Hujan setiap 20-40 detik
+
+    setTimeout(() => {
+        startRain(scene);
+        setTimeout(() => stopRain(scene), 5000); // Hujan berlangsung selama 5 detik
+        startRainCycle(scene);
+    }, timeUntilRain);
+}
+
+// Fungsi untuk memulai hujan
+function startRain(scene) {
+    isRaining = true;
+    scene.weatherText.setText("🌧️ Hujan");
+
+    // Efek hujan
+    for (let i = 0; i < 50; i++) {
+        let drop = scene.raindrops.create(Phaser.Math.Between(0, 800), Phaser.Math.Between(-100, 0), "raindrop");
+        scene.physics.add.existing(drop);
+        drop.setVelocityY(300);
+    }
+
+    // Menyiram otomatis
+    scene.plantedCrops.forEach((crop) => {
+        if (crop.growthStage === 0) {
+            crop.isWatered = true;
+            crop.setTexture("sprout");
+
+            setTimeout(() => {
+                crop.setTexture("carrot");
+                crop.growthStage = 1;
+            }, 3000);
+        }
+    });
+}
+
+// Fungsi untuk menghentikan hujan
+function stopRain(scene) {
+    isRaining = false;
+    scene.weatherText.setText("☀️ Cerah");
+    scene.raindrops.clear(true, true);
 }
